@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Withdraw</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .header { display: flex; align-items: center; padding: 15px; background: #1a1a1a; position: sticky; top: 0; }
+        .back-btn { font-size: 20px; cursor: pointer; margin-right: 110px; text-decoration: none; color: white; }
+        
+        .container { padding: 15px; }
+
+        /* बैलेंस कार्ड */
+        .balance-card { 
+            background: linear-gradient(135deg, #f3d078, #d4af37); 
+            border-radius: 15px; padding: 20px; color: #3d2a00; 
+            margin-bottom: 20px; position: relative;
+        }
+        .balance-title { font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .amount { font-size: 30px; font-weight: bold; margin: 10px 0; }
+        .chip { width: 45px; height: 35px; background: rgba(0,0,0,0.1); border-radius: 6px; margin-top: 5px; }
+        .card-dots { position: absolute; bottom: 20px; right: 20px; letter-spacing: 2px; opacity: 0.6; }
+
+        /* बैंक और UPI बटन */
+        .method-selector { display: flex; gap: 12px; margin-bottom: 20px; }
+        .method-btn { 
+            flex: 1; background: #2a2a2a; border-radius: 12px; padding: 15px 5px;
+            text-align: center; cursor: pointer; border: 1px solid transparent;
+            transition: 0.3s; color: #888;
+        }
+        .method-btn img { width: 30px; display: block; margin: 0 auto 8px; opacity: 0.6; }
+        .method-btn.active { background: #f3d078; color: #3d2a00; border: none; }
+        .method-btn.active img { opacity: 1; filter: brightness(0.2); }
+
+        /* एड बटन (जब डेटा न हो) */
+        .action-box { 
+            background: #222; border: 1px dashed #444; border-radius: 12px; 
+            padding: 35px; text-align: center; cursor: pointer; color: #777;
+        }
+        .action-box span { font-size: 40px; display: block; margin-bottom: 5px; }
+        
+        /* डेटा कार्ड (फोटो की तरह गहरा डिजाइन) */
+        .saved-card { 
+            background: #2a2a2a; border-radius: 12px; padding: 18px 20px; 
+            display: none; cursor: pointer; position: relative; border: 1px solid #333;
+        }
+        .saved-card::after { content: '❯'; position: absolute; right: 20px; top: 40%; color: #666; font-size: 14px; }
+        .upi-tag { 
+            background: #666; color: white; font-size: 10px; font-weight: bold; 
+            padding: 2px 5px; border-radius: 3px; font-style: italic; margin-right: 8px;
+        }
+        #name_txt { font-size: 16px; font-weight: 500; display: flex; align-items: center; color: #ddd; }
+        #upi_txt { color: #888; font-size: 14px; margin-top: 8px; }
+
+        /* अमाउंट इनपुट */
+        .input-area { 
+            background: #1e1e1e; border-radius: 30px; padding: 18px 25px; 
+            margin-top: 25px; display: flex; align-items: center; gap: 15px; border: 1px solid #2a2a2a;
+        }
+        .input-area span { color: #f3d078; font-weight: bold; font-size: 20px; }
+        .input-area input { background: transparent; border: none; color: white; width: 100%; outline: none; font-size: 16px; }
+
+        /* विथड्रॉ बटन (गहरा रंग) */
+        .withdraw-submit { 
+            width: 100%; background: #333333; color: #f3d078; 
+            padding: 16px; border-radius: 30px; border: none; 
+            font-size: 16px; font-weight: bold; margin-top: 30px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">❮</a>
+        <span style="font-weight: bold;">Withdraw</span>
+    </div>
+
+    <div class="container">
+        <div class="balance-card">
+            <div class="balance-title">📂 Available balance</div>
+            <div class="amount">₹ <span id="with_bal">0.00</span> <span style="font-size: 18px; cursor:pointer;" onclick="syncOriginalBalance()">🔄</span></div>
+            <div class="chip"></div>
+            <div class="card-dots">**** ****</div>
+        </div>
+
+        <div class="method-selector">
+            <div class="method-btn" onclick="selectMethod('bank', this)">
+                <img src="https://cdn-icons-png.flaticon.com/512/633/633611.png"> BANK CARD
+            </div>
+            <div class="method-btn active" onclick="selectMethod('upi', this)">
+                <img src="https://cdn-icons-png.flaticon.com/512/732/732244.png"> UPI
+            </div>
+        </div>
+
+        <div id="add_section">
+            <div id="add_btn" class="action-box" onclick="location.href='add_upi.html'">
+                <span>+</span>
+                <div>Add a bank account number</div>
+            </div>
+            
+            <div id="data_display" class="saved-card" onclick="location.href='add_upi.html'">
+                <div id="name_txt"></div>
+                <div id="upi_txt"></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <span>₹</span>
+            <input type="number" id="withdrawAmount" placeholder="Please enter the amount">
+        </div>
+
+        <button class="withdraw-submit" onclick="processWithdraw()">Withdraw</button>
+    </div>
+
+    <script>
+        // --- BALANCE SYNC LOGIC ---
+        async function syncOriginalBalance() {
+            const userPhone = localStorage.getItem('userPhone');
+            if (!userPhone) return;
+
+            try {
+                const response = await fetch(`/api/user?phone=${userPhone}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('with_bal').innerText = data.balance.toFixed(2);
+                    localStorage.setItem('user_balance', data.balance);
+                }
+            } catch (err) { console.error("Balance Error:", err); }
+        }
+
+        // --- WITHDRAW PROCESS & REDIRECT ---
+        async function processWithdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            const userPhone = localStorage.getItem('userPhone');
+            const savedUpi = localStorage.getItem('saved_upi_id');
+            const currentBal = parseFloat(localStorage.getItem('user_balance') || 0);
+
+            if (!savedUpi) { alert("Please add UPI first!"); return; }
+            if (!amount || amount < 100) { alert("Minimum withdraw ₹100"); return; }
+            if (amount > currentBal) { alert("Insufficient balance!"); return; }
+
+            try {
+                const res = await fetch('/api/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone, amount: amount, upi: savedUpi })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert("Request Submitted!");
+                    // SUCCESS KE BAAD DUSRE PAGE PE JANA
+                    window.location.href = 'withdraw-history.html'; 
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) { 
+                // Agar server API nahi bani toh bhi testing ke liye redirect kar sakte ho
+                console.log("Server API missing, redirecting anyway for UI test...");
+                window.location.href = 'withdraw-history.html';
+            }
+        }
+
+        function selectMethod(type, btn) {
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const addSec = document.getElementById('add_section');
+            if(type === 'upi') {
+                addSec.style.opacity = "1";
+                addSec.style.pointerEvents = "all";
+            } else {
+                addSec.style.opacity = "0.3";
+                addSec.style.pointerEvents = "none";
+            }
+        }
+
+        window.onload = function() {
+            syncOriginalBalance();
+            const savedName = localStorage.getItem('saved_upi_name');
+            const savedUpi = localStorage.getItem('saved_upi_id');
+            
+            if(savedName && savedUpi) {
+                document.getElementById('add_btn').style.display = 'none';
+                document.getElementById('data_display').style.display = 'block';
+                document.getElementById('name_txt').innerHTML = `<span class="upi-tag">UPI</span> ${savedName.toUpperCase()}`;
+                document.getElementById('upi_txt').innerText = savedUpi;
+            }
+        }
+    </script>
+</body>
+</html>
