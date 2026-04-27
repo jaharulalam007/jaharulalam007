@@ -7,7 +7,7 @@ app.use(express.json());
 app.use(cors());
 
 // ================== अपना Connection String यहाँ डालो ==================
-const uri = "mongodb+srv://jaharulalam1234:YOUR_ACTUAL_PASSWORD_HERE@cluster1.m3w4dg5.mongodb.net/?retryWrites=true&w=majority";
+const uri = "mongodb+srv://jaharulalam1234:jaharulalam1234@cluster1.m3w4dg5.mongodb.net/?retryWrites=true&w=majority";
 // =====================================================================
 
 const client = new MongoClient(uri);
